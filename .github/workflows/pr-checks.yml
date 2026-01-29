@@ -1,0 +1,50 @@
+---
+name: PR checks
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+jobs:
+  linting:
+    name: Check Yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.13'
+      - name: Install deps
+        run: |
+          pip install yamllint yamlfix
+      - name: Add yamllint annotator
+        uses: pr-annotators/yamllint-pr-annotator@v1.0.0
+      - name: Run yamllint
+        run: |-
+          yamllint -f parsable TranslatorReasonerAPI.yaml
+      - name: Run yamlfix
+        run: |-
+          yamlfix --validate-only TranslatorReasonerAPI.yaml
+  format_check:
+    name: Check Yamlfix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+      - name: Run yamlfix
+        run: |-
+          yamlfix TranslatorReasonerAPI.yaml
+      - name: Verify no format changes
+        uses: tj-actions/verify-changed-files@v20.0.4
+        id: verify-changed-files
+        with:
+          fail-if-changed: true
+          files: |
+            TranslatorReasonerAPI.yaml
